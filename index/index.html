@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>판교어 번역기</title>
+    <meta name="description" content="표준어와 판교체(판교어)를 손쉽게 번역하는 오프라인 웹 앱">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='90'%3E💼%3C/text%3E%3C/svg%3E">
+    <link rel="stylesheet" href="./style.css">
+  </head>
+  <body>
+    <main class="app">
+      <header class="header">
+        <h1>판교어 번역기</h1>
+        <p class="subtitle">표준어 ↔ 판교체 변환기. 전부 브라우저에서만 동작합니다.</p>
+      </header>
+
+      <section class="controls">
+        <div class="direction">
+          <label for="directionSelect" class="label">번역 방향</label>
+          <select id="directionSelect" aria-label="번역 방향 선택">
+            <option value="toPangyo">표준어 → 판교어</option>
+            <option value="toStandard">판교어 → 표준어</option>
+          </select>
+        </div>
+        <label class="vibe">
+            <input type="checkbox" id="vibeToggle" checked>
+            판교 바이브 강화
+          </label>
+          <label class="vibe">
+            <input type="checkbox" id="llmToggle"> LLM 번역 사용
+          </label>
+      </section>
+
+      <section class="panes">
+        <div class="pane">
+          <div class="paneHeader">
+            <span class="paneTitle">입력</span>
+            <span class="counter" id="inputCount">0자</span>
+          </div>
+          <textarea id="inputText" placeholder="예: 오늘 회의에서 결정된 내용 공유 부탁드립니다."></textarea>
+          <div class="actions">
+            <button id="clearBtn" class="secondary">지우기</button>
+            <button id="swapBtn" class="secondary">좌우 바꾸기</button>
+            <button id="translateBtn" class="primary">번역</button>
+          </div>
+        </div>
+
+        <div class="pane">
+          <div class="paneHeader">
+            <span class="paneTitle">출력</span>
+            <span class="counter" id="outputCount">0자</span>
+          </div>
+          <textarea id="outputText" placeholder="번역 결과가 여기에 표시됩니다." readonly></textarea>
+          <div class="actions">
+            <button id="copyBtn" class="primary">복사</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="examples">
+        <div class="label">예시 문장</div>
+        <div class="chips" id="examples"></div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+  </html>
+
+
