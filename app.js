@@ -14,6 +14,8 @@
   
     const STORAGE_KEY = 'pangyo-translator-state-v1';
     const API_BASE = 'http://localhost:8787';
+    let lastLogText = '';
+    let lastLogAt = 0;
   
     const phrasePairs = [
       ['공유 부탁드립니다', '쉐어 부탁드립니다'],
@@ -93,6 +95,21 @@
   
     function setOutput(v) { outputText.value = v; outputCount.textContent = `${v.length}자`; }
     function setInput(v) { inputText.value = v; inputCount.textContent = `${v.length}자`; }
+    async function maybeLogInput(text) {
+      const t = (text || '').trim();
+      if (!t) return;
+      const now = Date.now();
+      if (t === lastLogText && now - lastLogAt < 60000) return;
+      lastLogText = t;
+      lastLogAt = now;
+      try {
+        await fetch(`${API_BASE}/api/log`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'input', text: t })
+        });
+      } catch {}
+    }
   
     function persist() {
       const state = {
@@ -140,6 +157,7 @@
         setOutput(translate(text, dir, vibe));
       }
       persist();
+      maybeLogInput(text);
     }
   
     function swapSides() {
