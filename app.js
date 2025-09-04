@@ -13,9 +13,112 @@
     const examples = document.getElementById('examples');
   
     const STORAGE_KEY = 'pangyo-translator-state-v1';
+    const LEARNED_PATTERNS_KEY = 'pangyo-learned-patterns-v1';
     const API_BASE = 'http://localhost:8787';
     let lastLogText = '';
     let lastLogAt = 0;
+  
+    // 학습 기반 패턴 시스템
+    class PatternLearner {
+      constructor() {
+        this.patterns = new Map();
+        this.loadFromStorage();
+      }
+      
+      loadFromStorage() {
+        try {
+          const stored = localStorage.getItem(LEARNED_PATTERNS_KEY);
+          if (stored) {
+            const data = JSON.parse(stored);
+            this.patterns = new Map(Object.entries(data));
+          }
+        } catch (e) {
+          console.warn('학습 패턴 로드 실패:', e);
+        }
+      }
+      
+      saveToStorage() {
+        try {
+          const data = Object.fromEntries(this.patterns);
+          localStorage.setItem(LEARNED_PATTERNS_KEY, JSON.stringify(data));
+        } catch (e) {
+          console.warn('학습 패턴 저장 실패:', e);
+        }
+      }
+      
+      learn(input, output) {
+        const key = input.toLowerCase().trim();
+        if (key && key !== output.toLowerCase().trim()) {
+          this.patterns.set(key, output);
+          this.saveToStorage();
+          console.log('새 패턴 학습:', key, '→', output);
+        }
+      }
+      
+      apply(text, direction) {
+        let result = text;
+        
+        for (const [pattern, translation] of this.patterns) {
+          if (direction === 'toStandard') {
+            // 패턴을 정규식으로 변환 (단어 경계 고려)
+            const regex = new RegExp(`\\b${pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g');
+            result = result.replace(regex, translation);
+          } else {
+            // 역방향도 지원
+            const regex = new RegExp(`\\b${translation.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g');
+            result = result.replace(regex, pattern);
+          }
+        }
+        
+        return result;
+      }
+      
+      getPatternCount() {
+        return this.patterns.size;
+      }
+      
+      clearPatterns() {
+        this.patterns.clear();
+        this.saveToStorage();
+      }
+    }
+    
+    const learner = new PatternLearner();
+
+    // ASAP 관련 스마트 변환 함수
+    function smartTranslateASAP(text, direction) {
+      if (direction === 'toPangyo') {
+        return text
+          .replace(/\b빨리\b/g, 'ASAP')
+          .replace(/\b빠르게\b/g, 'ASAP')
+          .replace(/\b조속히\b/g, 'ASAP')
+          .replace(/\b급하게\b/g, 'ASAP')
+          .replace(/\b서둘러서\b/g, 'ASAP');
+      } else {
+        return text
+          // 구체적인 패턴들을 먼저 처리
+          .replace(/\b(아삽|아쌉|ASAP)하게\b/g, '빨리')
+          .replace(/\b(아삽|아쌉|ASAP)로\b/g, '빠르게')
+          .replace(/\b(아삽|아쌉|ASAP)이\b/g, '빠르게')
+          .replace(/\b(아삽|아쌉|ASAP)을\b/g, '빠르게')
+          .replace(/\b(아삽|아쌉|ASAP)가\b/g, '빠르게')
+          .replace(/\b(아삽|아쌉|ASAP)에\b/g, '빠르게')
+          .replace(/\b(아삽|아쌉|ASAP)에서\b/g, '빠르게')
+          .replace(/\b(아삽|아쌉|ASAP)에게\b/g, '빠르게')
+          .replace(/\b(아삽|아쌉|ASAP)와\b/g, '빠르게')
+          .replace(/\b(아삽|아쌉|ASAP)과\b/g, '빠르게')
+          .replace(/\b(아삽|아쌉|ASAP)는\b/g, '빠르게')
+          .replace(/\b(아삽|아쌉|ASAP)은\b/g, '빠르게')
+          .replace(/\b(아삽|아쌉|ASAP)도\b/g, '빠르게')
+          .replace(/\b(아삽|아쌉|ASAP)만\b/g, '빠르게')
+          .replace(/\b(아삽|아쌉|ASAP)부터\b/g, '빠르게')
+          .replace(/\b(아삽|아쌉|ASAP)까지\b/g, '빠르게')
+          .replace(/\b(아삽|아쌉|ASAP)처럼\b/g, '빠르게')
+          .replace(/\b(아삽|아쌉|ASAP)같이\b/g, '빠르게')
+          // 기본 ASAP 처리
+          .replace(/\b(아삽|아쌉|ASAP)\b/g, '빠르게');
+      }
+    }
   
     const phrasePairs = [
       ['공유 부탁드립니다', '쉐어 부탁드립니다'],
@@ -89,12 +192,20 @@
     function translate(text, direction, vibe) {
       const pairs = direction === 'toPangyo' ? maps.toPangyo : maps.toStandard;
       let out = applyPairs(text, pairs);
+      
+      // ASAP 스마트 변환 적용 (기본 번역보다 우선)
+      out = smartTranslateASAP(out, direction);
+      
+      // 학습된 패턴 적용
+      out = learner.apply(out, direction);
+      
       if (direction === 'toPangyo' && vibe) out = applyVibe(out);
       return out;
     }
   
     function setOutput(v) { outputText.value = v; outputCount.textContent = `${v.length}자`; }
     function setInput(v) { inputText.value = v; inputCount.textContent = `${v.length}자`; }
+    
     async function maybeLogInput(text) {
       const t = (text || '').trim();
       if (!t) return;
@@ -190,6 +301,29 @@
       for (const s of sampleSentences) examples.appendChild(makeChip(s));
     }
   
+    // 학습 기능 추가
+    function learnFromUser() {
+      const input = inputText.value.trim();
+      const output = outputText.value.trim();
+      
+      if (input && output && input !== output) {
+        learner.learn(input, output);
+        console.log(`학습 완료: "${input}" → "${output}"`);
+        console.log(`현재 학습된 패턴 수: ${learner.getPatternCount()}`);
+      }
+    }
+    
+    // 학습 버튼 추가 (개발자 도구에서 사용)
+    window.learnPattern = learnFromUser;
+    window.clearLearnedPatterns = () => {
+      learner.clearPatterns();
+      console.log('학습된 패턴이 모두 삭제되었습니다.');
+    };
+    window.getLearnedPatterns = () => {
+      console.log('학습된 패턴들:', Object.fromEntries(learner.patterns));
+      return Object.fromEntries(learner.patterns);
+    };
+  
     inputText.addEventListener('input', () => { inputCount.textContent = `${inputText.value.length}자`; persist(); });
     directionSelect.addEventListener('change', doTranslate);
     vibeToggle.addEventListener('change', doTranslate);
@@ -205,4 +339,7 @@
     restore();
     renderExamples();
     doTranslate();
+    
+    // 초기화 시 학습된 패턴 수 표시
+    console.log(`학습된 패턴 ${learner.getPatternCount()}개 로드됨`);
   })();

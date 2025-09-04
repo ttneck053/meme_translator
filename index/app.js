@@ -17,25 +17,81 @@
     let lastLogText = '';
     let lastLogAt = 0;
     
+    // ASAP 스마트 변환 함수 (한국어에 최적화)
+    function smartTranslateASAP(text, direction) {
+      if (direction === 'toPangyo') {
+        return text
+          .replace(/빨리/g, 'ASAP')
+          .replace(/빠르게/g, 'ASAP')
+          .replace(/조속히/g, 'ASAP')
+          .replace(/급하게/g, 'ASAP')
+          .replace(/서둘러서/g, 'ASAP');
+      } else {
+        return text
+          // 구체적인 패턴들을 먼저 처리 (한국어 단어 경계 고려)
+          .replace(/ASAP하게/g, '빨리')
+          .replace(/아삽하게/g, '빨리')
+          .replace(/아쌉하게/g, '빨리')
+          .replace(/ASAP로/g, '빠르게')
+          .replace(/아삽로/g, '빠르게')
+          .replace(/아쌉로/g, '빠르게')
+          .replace(/ASAP이/g, '빠르게')
+          .replace(/아삽이/g, '빠르게')
+          .replace(/아쌉이/g, '빠르게')
+          .replace(/ASAP을/g, '빠르게')
+          .replace(/아삽을/g, '빠르게')
+          .replace(/아쌉을/g, '빠르게')
+          .replace(/ASAP가/g, '빠르게')
+          .replace(/아삽가/g, '빠르게')
+          .replace(/아쌉가/g, '빠르게')
+          .replace(/ASAP에/g, '빠르게')
+          .replace(/아삽에/g, '빠르게')
+          .replace(/아쌉에/g, '빠르게')
+          .replace(/ASAP에서/g, '빠르게')
+          .replace(/아삽에서/g, '빠르게')
+          .replace(/아쌉에서/g, '빠르게')
+          .replace(/ASAP에게/g, '빠르게')
+          .replace(/아삽에게/g, '빠르게')
+          .replace(/아쌉에게/g, '빠르게')
+          .replace(/ASAP와/g, '빠르게')
+          .replace(/아삽와/g, '빠르게')
+          .replace(/아쌉와/g, '빠르게')
+          .replace(/ASAP과/g, '빠르게')
+          .replace(/아삽과/g, '빠르게')
+          .replace(/아쌉과/g, '빠르게')
+          .replace(/ASAP는/g, '빠르게')
+          .replace(/아삽는/g, '빠르게')
+          .replace(/아쌉는/g, '빠르게')
+          .replace(/ASAP은/g, '빠르게')
+          .replace(/아삽은/g, '빠르게')
+          .replace(/아쌉은/g, '빠르게')
+          .replace(/ASAP도/g, '빠르게')
+          .replace(/아삽도/g, '빠르게')
+          .replace(/아쌉도/g, '빠르게')
+          .replace(/ASAP만/g, '빠르게')
+          .replace(/아삽만/g, '빠르게')
+          .replace(/아쌉만/g, '빠르게')
+          .replace(/ASAP부터/g, '빠르게')
+          .replace(/아삽부터/g, '빠르게')
+          .replace(/아쌉부터/g, '빠르게')
+          .replace(/ASAP까지/g, '빠르게')
+          .replace(/아삽까지/g, '빠르게')
+          .replace(/아쌉까지/g, '빠르게')
+          .replace(/ASAP처럼/g, '빠르게')
+          .replace(/아삽처럼/g, '빠르게')
+          .replace(/아쌉처럼/g, '빠르게')
+          .replace(/ASAP같이/g, '빠르게')
+          .replace(/아삽같이/g, '빠르게')
+          .replace(/아쌉같이/g, '빠르게')
+          // 기본 ASAP 처리 (마지막에)
+          .replace(/ASAP/g, '빠르게')
+          .replace(/아삽/g, '빠르게')
+          .replace(/아쌉/g, '빠르게');
+      }
+    }
+    
     // 개념 단위(Concept) 기반 번역 시스템
     const concepts = {
-      // 시간 관련 개념
-      URGENCY: {
-        pangyo: ['ASAP', '아삽', '아쌉', 'ASAP하게', '아삽하게', '아쌉하게'],
-        standard: ['빠르게', '빨리', '조속히', '급하게', '서둘러서'],
-        patterns: {
-          toPangyo: [
-            { from: /\b(빠르게|빨리|조속히|급하게|서둘러서)\b/g, to: 'ASAP' },
-            { from: /\b(빠르게|빨리|조속히|급하게|서둘러서)\s*하게\b/g, to: 'ASAP하게' }
-          ],
-          toStandard: [
-            { from: /\bASAP\b/g, to: '빠르게' },
-            { from: /\b(아삽|아쌉)\b/g, to: '빠르게' },
-            { from: /\b(아삽|아쌉|ASAP)하게\b/g, to: '빠르게' }
-          ]
-        }
-      },
-      
       // 보안 관련 개념
       SECURITY: {
         pangyo: ['세커티', '시큐리티', '보안'],
@@ -240,12 +296,16 @@
       let result = text;
       
       if (direction === 'toPangyo') {
-        // 1. 개념 기반 번역
+        // 1. ASAP 스마트 변환 적용
+        result = smartTranslateASAP(result, 'toPangyo');
+        // 2. 개념 기반 번역
         result = translateByConcept(result, 'toPangyo');
-        // 2. 바이브 추가
+        // 3. 바이브 추가
         if (vibe) result = applyVibe(result);
       } else {
-        // 1. 개념 기반 번역 (역방향)
+        // 1. ASAP 스마트 변환 적용 (우선순위 높음)
+        result = smartTranslateASAP(result, 'toStandard');
+        // 2. 개념 기반 번역 (역방향)
         result = translateByConcept(result, 'toStandard');
       }
       
