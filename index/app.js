@@ -13,7 +13,7 @@
     const examples = document.getElementById('examples');
   
     const STORAGE_KEY = 'pangyo-translator-state-v1';
-    const API_BASE = 'http://localhost:8787';
+    // const API_BASE = 'http://localhost:8787'; // 정적 호스팅에서는 비활성화
     let lastLogText = '';
     let lastLogAt = 0;
     
@@ -316,19 +316,8 @@
     function setInput(v) { inputText.value = v; inputCount.textContent = `${v.length}자`; }
     
     async function maybeLogInput(text) {
-      const t = (text || '').trim();
-      if (!t) return;
-      const now = Date.now();
-      if (t === lastLogText && now - lastLogAt < 60000) return;
-      lastLogText = t;
-      lastLogAt = now;
-      try {
-        await fetch(`${API_BASE}/api/log`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: t })
-        });
-      } catch {}
+      // 정적 호스팅에서는 로깅 비활성화
+      return;
     }
 
     function persist() {
@@ -358,24 +347,8 @@
       const dir = directionSelect.value;
       const vibe = vibeToggle.checked;
 
-      if (llmToggle && llmToggle.checked) {
-        setOutput('번역 중...');
-        try {
-          const res = await fetch(`${API_BASE}/api/translate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text, direction: dir, vibe })
-          });
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          const data = await res.json();
-          setOutput(data.text || '');
-        } catch {
-          setOutput('[LLM 오류] 로컬 규칙 기반으로 대체합니다.');
-          setOutput(translate(text, dir, vibe));
-        }
-      } else {
-        setOutput(translate(text, dir, vibe));
-      }
+      // 정적 호스팅에서는 항상 로컬 규칙 기반 번역 사용
+      setOutput(translate(text, dir, vibe));
       persist();
     }
 
